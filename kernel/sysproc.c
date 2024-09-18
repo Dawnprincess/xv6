@@ -5,6 +5,10 @@
 #include "memlayout.h"
 #include "spinlock.h"
 #include "proc.h"
+#include "sysinfo.h"
+
+int acquire_freemem();
+int acquire_nproc();
 
 uint64
 sys_exit(void)
@@ -95,6 +99,31 @@ sys_uptime(void)
 uint64
 sys_trace(void)
 {
-	printf("sys_trace: hi");
+	int mask;
+
+	argint(0,&mask);
+	if(mask < 0)
+		return -1;
+
+	struct proc *p = myproc();
+	p->trace_mask = mask;
+	return 0;
+
+}
+uint64
+sys_sysinfo(void){
+	struct sysinfo info;
+	uint64 addr;
+	struct proc *p = myproc();
+
+	info.nproc = acquire_nproc();
+	info.freemem = acquire_freemem();
+	//从内核空间拷贝到用户空间，将接收到的第零个参数放在addr
+	argaddr(0,&addr);
+	if(copyout(p->pagetable, addr,(char *)&info, sizeof(info))<0)
+		return -1;
+
+	printf("sys_info: nproc is %d,and the freemem is %d\n",info.nproc,info.freemem);
 	return 0;
 }
+
