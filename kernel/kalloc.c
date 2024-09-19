@@ -72,10 +72,11 @@ kalloc(void)
 
   acquire(&kmem.lock);
   r = kmem.freelist;
+  //如果r不为空，则说明有空闲的物理页，则将其从空闲链表中删除，并返回
   if(r)
     kmem.freelist = r->next;
   release(&kmem.lock);
-
+  //如果r为空，则说明没有空闲的物理页，则返回0,该处的if语句保证了r不会被其他线程修改
   if(r)
     memset((char*)r, 5, PGSIZE); // fill with junk
   return (void*)r;

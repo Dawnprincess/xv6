@@ -30,11 +30,13 @@
 #endif
 
 // core local interruptor (CLINT), which contains the timer.
+// CLINT的物理地址是0x2000000，它包含定时器。
 #define CLINT 0x2000000L
 #define CLINT_MTIMECMP(hartid) (CLINT + 0x4000 + 8*(hartid))
 #define CLINT_MTIME (CLINT + 0xBFF8) // cycles since boot.
 
 // qemu puts platform-level interrupt controller (PLIC) here.
+//PLIC是RISC-V的外部中断控制器，它负责管理外部中断。
 #define PLIC 0x0c000000L
 #define PLIC_PRIORITY (PLIC + 0x0)
 #define PLIC_PENDING (PLIC + 0x1000)
@@ -49,16 +51,23 @@
 // for use by the kernel and user pages
 // from physical address 0x80000000 to PHYSTOP.
 #define KERNBASE 0x80000000L
-#define PHYSTOP (KERNBASE + 128*1024*1024)
+#define PHYSTOP (KERNBASE + 128*1024*1024)//RAM的结束地址
+
+
+// Virtual memory layout
+//虚拟内存分为两部分：内核空间和用户空间,内核空间的地址从0x80000000到PHYSTOP
 
 // map the trampoline page to the highest address,
 // in both user and kernel space.
+//TRAMPOLINE是内核用来跳转到用户空间的页，它位于内核空间的最高地址处。MAXVA是内核空间的最大地址。
 #define TRAMPOLINE (MAXVA - PGSIZE)
 
 // map kernel stacks beneath the trampoline,
 // each surrounded by invalid guard pages.
+// KSTACK是内核栈的起始地址，它位于内核空间的最低地址处。
 #define KSTACK(p) (TRAMPOLINE - (p)*2*PGSIZE - 3*PGSIZE)
 
+// User programs have a virtual memory layout as follows:
 // User memory layout.
 // Address zero first:
 //   text
@@ -68,7 +77,7 @@
 //   ...
 //   USYSCALL (shared with kernel)
 //   TRAPFRAME (p->trapframe, used by the trampoline)
-//   TRAMPOLINE (the same page as in the kernel)
+
 #define TRAPFRAME (TRAMPOLINE - PGSIZE)
 #ifdef LAB_PGTBL
 #define USYSCALL (TRAPFRAME - PGSIZE)

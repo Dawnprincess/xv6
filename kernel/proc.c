@@ -131,6 +131,14 @@ found:
     release(&p->lock);
     return 0;
   }
+  //allocate a usyscall page
+  if((p->usyscall = (struct usyscall *)kalloc()) == 0){
+    freeproc(p);
+    release(&p->lock);
+    return 0;
+  }
+  p->usyscall->pid = p->pid;
+ 
 
   // An empty user page table.
   p->pagetable = proc_pagetable(p);
@@ -158,6 +166,10 @@ freeproc(struct proc *p)
   if(p->trapframe)
     kfree((void*)p->trapframe);
   p->trapframe = 0;
+  if(p->usyscall){
+    kfree((void*)p->usyscall);
+  }
+  p->usyscall = 0;
   if(p->pagetable)
     proc_freepagetable(p->pagetable, p->sz);
   p->pagetable = 0;
@@ -178,7 +190,7 @@ proc_pagetable(struct proc *p)
 {
   pagetable_t pagetable;
 
-  // An empty page table.
+  // An empty page table.pagetable是一个页表指针
   pagetable = uvmcreate();
   if(pagetable == 0)
     return 0;
@@ -187,12 +199,14 @@ proc_pagetable(struct proc *p)
   // at the highest user virtual address.
   // only the supervisor uses it, on the way
   // to/from user space, so not PTE_U.
+  //这一部分是映射trampoline的，只在supervisor态使用，用户态不使用,所以没有PTE_U标志
   if(mappages(pagetable, TRAMPOLINE, PGSIZE,
               (uint64)trampoline, PTE_R | PTE_X) < 0){
     uvmfree(pagetable, 0);
     return 0;
   }
-
+  //trampoline是用来从supervisor态切换到user态的，所以不需要映射到用户态的地址空间
+  //这一部分是映射trapframe的，只在supervisor态使用，用户态不使用,所以没有PTE_U标志
   // map the trapframe page just below the trampoline page, for
   // trampoline.S.
   if(mappages(pagetable, TRAPFRAME, PGSIZE,
@@ -201,6 +215,13 @@ proc_pagetable(struct proc *p)
     uvmfree(pagetable, 0);
     return 0;
   }
+  if(mappages(pagetable, USYSCALL, PGSIZE,
+                (uint64)(p->usyscall), PTE_R | PTE_U) < 0){
+      uvmunmap(pagetable, USYSCALL, 1, 0);
+      uvmunmap(pagetable, TRAMPOLINE, 1, 0);
+      uvmfree(pagetable, 0);
+      return 0;
+    }
 
   return pagetable;
 }
@@ -210,6 +231,7 @@ proc_pagetable(struct proc *p)
 void
 proc_freepagetable(pagetable_t pagetable, uint64 sz)
 {
+  uvmunmap(pagetable, USYSCALL, 1, 0);
   uvmunmap(pagetable, TRAMPOLINE, 1, 0);
   uvmunmap(pagetable, TRAPFRAME, 1, 0);
   uvmfree(pagetable, sz);
