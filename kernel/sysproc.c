@@ -75,6 +75,28 @@ int
 sys_pgaccess(void)
 {
   // lab pgtbl: your code here.
+  int bitmask,len;
+  uint64 addr;
+  //接收参数
+  argaddr(0, &addr);
+  argint(1, &len); 
+  argint(2, &bitmask);
+  if((len > 32 || len < 0))
+    return -1;
+
+
+  int res = 0;
+  //从addr开始，len个字节，设置bitmask位
+  
+  struct proc *p = myproc();
+  for(int i =0; i < len; i++){
+    int va = addr + i * PGSIZE;
+    int abit = vm_pgacess(p->pagetable, va);
+    res = res | abit << i;
+  }
+  if(copyout(p->pagetable, bitmask, (char *)&res, sizeof(res)) < 0)
+    return -1;
+
   return 0;
 }
 #endif
@@ -100,3 +122,4 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+

@@ -148,6 +148,7 @@ mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm)
   if(size == 0)
     panic("mappages: size");
   
+  //对于size小于PGSIZE的情况，a和last都指向同一个虚拟地址,即相等
   a = PGROUNDDOWN(va);
   last = PGROUNDDOWN(va + size - 1);
   for(;;){
@@ -354,14 +355,15 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
   uint64 n, va0, pa0;
 
   while(len > 0){
+    //va0为虚拟地址向下取整后的地址(直接传入的虚拟地址不能直接映射查找,只能找通过页面的起始地址查找,即找到所属的页)，pa0为对应的物理地址
     va0 = PGROUNDDOWN(dstva);
     pa0 = walkaddr(pagetable, va0);
     if(pa0 == 0)
       return -1;
-    n = PGSIZE - (dstva - va0);
+    n = PGSIZE - (dstva - va0);//n为剩余空间大小
     if(n > len)
       n = len;
-    memmove((void *)(pa0 + (dstva - va0)), src, n);
+    memmove((void *)(pa0 + (dstva - va0)), src, n);//dstva - va0为目标地址在页内偏移
 
     len -= n;
     src += n;
@@ -448,10 +450,25 @@ void vmprint(pagetable_t pagetable, int depth){
   for(int i = 0; i < 512; i++){
     pte_t pte = pagetable[i];
     if(pte & PTE_V){
-      printf("%.*s",(depth + 1)*3," .. .. ..");
-      printf("%d: pte %p pa %p", i, pte,PTE2PA(pte));
+      printf(" .. .. .."+(2 - depth) * 3);
+      printf("%d: pte %p pa %p\n", i, pte,PTE2PA(pte));
       uint64 child = PTE2PA(pte);
       vmprint((pagetable_t)child, depth+1);
     }
   }
+}
+int vm_pgacess(pagetable_t pagetable, uint64 va){
+  pte_t *pte;
+  if(va >= MAXVA)
+    return 0;
+  //查找va对应的PTE
+  pte = walk(pagetable, va, 0);
+  if(pte == 0)
+    return 0;
+  //如果PTE_A为1,则说明该页已经被访问过,将PTE_A置为0,并返回
+  if((*pte & PTE_A) != 0){
+    *pte = *pte & (~PTE_A);
+    return 1;
+  }
+  return 0;
 }
