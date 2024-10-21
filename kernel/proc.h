@@ -105,4 +105,8 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
+
+  int ticks;                   // 当前时钟数
+  int ticks_cnt;               // 计数器  
+  uint64 handler;             // handler是一个函数指针
 };

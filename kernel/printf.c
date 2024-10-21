@@ -132,3 +132,24 @@ printfinit(void)
   initlock(&pr.lock, "pr");
   pr.locking = 1;
 }
+
+void
+backtrace(void){
+  printf("backtrace:\n");
+  //获取当前栈帧指针
+  uint64 fp = r_fp();
+  //获取当前栈帧指针的地址
+  uint64 *frame = (uint64 *)fp;
+  //up,down为栈帧指针的上下限,确保栈帧指针在栈内
+  uint64 up = PGROUNDUP(fp);
+  uint64 down = PGROUNDDOWN(fp);
+  //遍历栈帧指针
+  while(fp < up && fp > down){
+    //打印出函数返回地址
+    printf("%p\n", frame[-1]);
+    //将指针指向上一个栈帧指针
+    //frame[-1] 通常是当前函数的返回地址,frame[-2] 是指向调用当前函数的上一个栈帧的指针。
+    fp = frame[-2];
+    frame = (uint64 *) fp;
+  }
+}

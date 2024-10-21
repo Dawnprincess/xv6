@@ -70,6 +70,7 @@ sys_sleep(void)
     sleep(&ticks, &tickslock);
   }
   release(&tickslock);
+  backtrace();
   return 0;
 }
 
@@ -94,4 +95,29 @@ sys_uptime(void)
   xticks = ticks;
   release(&tickslock);
   return xticks;
+}
+
+uint64
+sys_sigalarm(void)
+{
+  //handler是函数指针,系统调用的第二个参数
+  //ticks是时钟数,系统调用的第一个参数
+  int ticks;
+  uint64 handler;
+  argint(0, &ticks);
+  argaddr(1, &handler);
+
+  struct proc *p = myproc();
+  p->ticks = ticks;
+  p->handler = handler;
+  p->ticks_cnt = 0;
+
+
+  return 0;
+}
+
+uint64
+sys_sigreturn(void)
+{
+  return 0;
 }

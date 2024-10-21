@@ -1,8 +1,8 @@
 // Shell.
 
-#include "kernel/types.h"
-#include "user/user.h"
-#include "kernel/fcntl.h"
+#include "/home/dawn/xv6/kernel/types.h"
+#include "/home/dawn/xv6/user/user.h"
+#include "/home/dawn/xv6/kernel/fcntl.h"
 
 // Parsed command representation
 #define EXEC  1
@@ -133,7 +133,7 @@ runcmd(struct cmd *cmd)
 int
 getcmd(char *buf, int nbuf)
 {
-  fprintf(2, "$ ");
+  write(2, "$ ",2);
   memset(buf, 0, nbuf);
   gets(buf, nbuf);
   if(buf[0] == 0) // EOF

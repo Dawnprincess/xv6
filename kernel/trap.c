@@ -77,8 +77,16 @@ usertrap(void)
     exit(-1);
 
   // give up the CPU if this is a timer interrupt.
-  if(which_dev == 2)
+  if(which_dev == 2){
+    p->ticks_cnt++;
+    if(p->ticks_cnt > p->ticks){
+      p->ticks_cnt = 0;
+      //将handler调用函数地址保存在epc中，
+      //当从内核态返回用户态时，会从epc中取出地址，然后跳转执行handler函数(原本是中断处下一个指令)
+      p->trapframe->epc = p->handler;
+    }
     yield();
+  }
 
   usertrapret();
 }
