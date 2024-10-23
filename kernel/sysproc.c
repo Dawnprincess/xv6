@@ -119,5 +119,11 @@ sys_sigalarm(void)
 uint64
 sys_sigreturn(void)
 {
+  struct proc *p = myproc();
+  //将alarm_trapframe中的内容复制到trapframe中,
+  //这样当从内核态返回用户态时，会从trapframe中取指令执行，
+  //而不会从中断处开始执行(epc被设置为handler地址)
+  memmove(p->trapframe, p->alarm_trapframe, sizeof(struct trapframe));
+  p->handler_cnt = 0;
   return 0;
 }

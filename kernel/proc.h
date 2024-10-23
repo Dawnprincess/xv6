@@ -109,4 +109,6 @@ struct proc {
   int ticks;                   // 当前时钟数
   int ticks_cnt;               // 计数器  
   uint64 handler;             // handler是一个函数指针
+  struct trapframe *alarm_trapframe; // 保存alarm中断时的trapframe
+  int handler_cnt;                 // 防止handler函数执行次数过多
 };

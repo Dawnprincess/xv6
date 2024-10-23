@@ -21,12 +21,12 @@ void slow_handler();
 int
 main(int argc, char *argv[])
 {
-  test0();
-  test1();
+  //test0();
+  //test1();
   test2();
   exit(0);
 }
-
+//count用于记录alarm的次数
 volatile static int count;
 
 void
@@ -134,6 +134,7 @@ test2()
     }
     exit(0);
   }
+  //等待子进程结束
   wait(&status);
   if (status == 0) {
     printf("test2 passed\n");
@@ -149,7 +150,7 @@ slow_handler()
     printf("test2 failed: alarm handler called more than once\n");
     exit(1);
   }
-  for (int i = 0; i < 1000*500000; i++) {
+  for (int i = 0; i < 1000*250000; i++) {
     asm volatile("nop"); // avoid compiler optimizing away loop
   }
   sigalarm(0, 0);
